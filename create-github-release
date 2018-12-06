@@ -1,0 +1,70 @@
+#!/bin/bash
+set -e
+set -o pipefail
+DEBUG=true
+
+
+if [[ ! -z "$DEBUG" ]]; then
+  GITHUB_EVENT_PATH='./testdata/event.json'
+  GITHUB_TOKEN='test_token'
+  GITHUB_REPOSITORY='devinclark/test'
+fi
+
+
+if [[ ! -z "$TOKEN" ]]; then
+  GITHUB_TOKEN=$TOKEN
+fi
+
+if [[ -z "$GITHUB_TOKEN" ]]; then
+  echo "Set the GITHUB_TOKEN env variable."
+  exit 1
+fi
+
+if [[ -z "$GITHUB_REPOSITORY" ]]; then
+  echo "Set the GITHUB_REPOSITORY env variable."
+  exit 1
+fi
+
+URI=https://api.github.com
+API_VERSION=v3
+API_HEADER="Accept: application/vnd.github.${API_VERSION}+json"
+AUTH_HEADER="Authorization: token ${GITHUB_TOKEN}"
+NEUTRAL_EXIT=78
+
+main() {
+  action=$(jq --raw-output .action "$GITHUB_EVENT_PATH")
+  ref=$(jq --raw-output .ref "$GITHUB_EVENT_PATH")
+  version=${ref/refs\/tags\/}
+
+  echo "DEBUG -> action: $action ref: $ref version: $version"
+
+  if [[ $ref == refs\/tags/* ]]; then
+    owner=$(jq --raw-output .repository.owner.login "$GITHUB_EVENT_PATH")
+    repo=$(jq --raw-output .repository.name "$GITHUB_EVENT_PATH")
+
+    echo "Creating release for ${repo} ${version}..."
+
+    # https://developer.github.com/v3/repos/releases/#create-a-release
+    release=$(curl -XPOST -sSL -H "${AUTH_HEADER}" -H "${API_HEADER}" --data "{\"tag_name\": \"${version}\"}" "${URI}/repos/${owner}/${repo}/releases")
+
+      release_id=$(echo "$release" | jq --raw-output .id)
+
+      for file in $GITHUB_WORKSPACE/**/*.tgz; do
+        echo "Adding ${file} to release..."
+
+        # https://developer.github.com/v3/repos/releases/#upload-a-release-asset
+        curl -XPOST -sSL \
+          -H "${AUTH_HEADER}" \
+          -H "${API_HEADER}" \
+          -H "Content-Type application/gzip" \
+          --data-binary "@${GITHUB_WORKSPACE}/${file}" \
+          "${URI}/repos/${owner}/${repo}/releases/${release_id}/assets?name=${file}"
+      done
+
+    echo "Release created successfully!"
+  fi
+
+  exit $NEUTRAL_EXIT
+}
+
+main "$@"
