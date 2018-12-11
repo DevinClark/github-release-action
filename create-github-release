@@ -7,7 +7,7 @@ DEBUG=true
 if [[ ! -z "$DEBUG" ]]; then
   GITHUB_EVENT_PATH='./testdata/event.json'
   GITHUB_TOKEN='test_token'
-  GITHUB_REPOSITORY='devinclark/test'
+  GITHUB_REPOSITORY='magistrate/dashboard'
 fi
 
 
@@ -45,7 +45,7 @@ main() {
     echo "Creating release for ${repo} ${version}..."
 
     # https://developer.github.com/v3/repos/releases/#create-a-release
-    release=$(curl -XPOST -sSL -H "${AUTH_HEADER}" -H "${API_HEADER}" --data "{\"tag_name\": \"${version}\"}" "${URI}/repos/${owner}/${repo}/releases")
+    release=$(curl -XPOST -sSLf -H "${AUTH_HEADER}" -H "${API_HEADER}" --data "{\"tag_name\": \"${version}\"}" "${URI}/repos/${owner}/${repo}/releases")
 
       release_id=$(echo "$release" | jq --raw-output .id)
 
@@ -53,7 +53,7 @@ main() {
         echo "Adding ${file} to release..."
 
         # https://developer.github.com/v3/repos/releases/#upload-a-release-asset
-        curl -XPOST -sSL \
+        curl -XPOST -sSLf \
           -H "${AUTH_HEADER}" \
           -H "${API_HEADER}" \
           -H "Content-Type application/gzip" \
