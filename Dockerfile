@@ -3,7 +3,7 @@ FROM alpine:latest
 LABEL "com.github.actions.name"="Github Release Action"
 LABEL "com.github.actions.description"="Create a github release when a tag is created. Attaches all .tgz files to the release."
 LABEL "com.github.actions.icon"="activity"
-LABEL "com.github.actions.color"="red"
+LABEL "com.github.actions.color"="purple"
 
 RUN	apk add --no-cache \
 	bash \
@@ -11,6 +11,6 @@ RUN	apk add --no-cache \
 	curl \
 	jq
 
-COPY cleanup-pr-branch /usr/bin/cleanup-pr-branch
+COPY create-github-release /usr/bin/create-github-release
 
-ENTRYPOINT ["cleanup-pr-branch"]
+ENTRYPOINT ["create-github-release"]
