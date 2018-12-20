@@ -67,6 +67,7 @@ main() {
       done
 
     echo "Release created successfully!"
+    exit 0
   fi
 
   exit $NEUTRAL_EXIT
