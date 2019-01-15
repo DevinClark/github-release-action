@@ -3,7 +3,6 @@ set -e
 set -o pipefail
 # DEBUG=true
 
-
 if [[ ! -z "$DEBUG" ]]; then
   GITHUB_EVENT_PATH='./testdata/event.json'
   GITHUB_TOKEN='test_token'
@@ -52,8 +51,9 @@ main() {
       release_id=$(echo "$release" | jq --raw-output .id)
       echo "ReleaseID: ${release_id}"
 
-      for f in $GITHUB_WORKSPACE/*.tgz; do
+      for f in $GITHUB_WORKSPACE/"$@"; do
         file=$(basename "$f")
+        type=$(file -b --mime-type "$f")
         echo "Adding ${f} to release..."
         echo "${UPLOADS_URI}/repos/${owner}/${repo}/releases/${release_id}/assets?name=${file}"
 
@@ -61,7 +61,7 @@ main() {
         curl -XPOST -sSL \
           -H "${AUTH_HEADER}" \
           -H "${API_HEADER}" \
-          -H "Content-Type: application/gzip" \
+          -H "Content-Type: ${type}" \
           --data-binary "@${GITHUB_WORKSPACE}/${f}" \
           "${UPLOADS_URI}/repos/${owner}/${repo}/releases/${release_id}/assets?name=${file}" > /dev/null
       done
