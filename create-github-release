@@ -7,7 +7,6 @@ if [[ ! -z "$DEBUG" ]]; then
   GITHUB_EVENT_PATH='./testdata/event.json'
   GITHUB_TOKEN='test_token'
   GITHUB_REPOSITORY='magistrate/dashboard'
-  GITHUB_WORKSPACE='.'
 fi
 
 
@@ -33,37 +32,35 @@ AUTH_HEADER="Authorization: token ${GITHUB_TOKEN}"
 NEUTRAL_EXIT=78
 
 main() {
-  action=$(jq --raw-output .action "$GITHUB_EVENT_PATH")
-  ref=$(jq --raw-output .ref "$GITHUB_EVENT_PATH")
-  version=${ref/refs\/tags\/}
+  version=$(jq --raw-output .ref "$GITHUB_EVENT_PATH")
+  ref_type=$(jq --raw-output .ref_type "$GITHUB_EVENT_PATH")
 
-  echo "DEBUG -> action: $action ref: $ref version: $version"
+  echo "DEBUG -> ref: $ref_type version: $version"
 
-  if [[ $ref == refs\/tags/* ]]; then
-    owner=$(jq --raw-output .repository.owner.login "$GITHUB_EVENT_PATH")
-    repo=$(jq --raw-output .repository.name "$GITHUB_EVENT_PATH")
+  if [[ $ref_type == "tag" ]]; then
+    repo_full_name=$(jq --raw-output .repository.full_name "$GITHUB_EVENT_PATH")
 
-    echo "Creating release for ${repo} ${version}..."
+    echo "Creating release for ${repo_full_name} ${version}..."
 
     # https://developer.github.com/v3/repos/releases/#create-a-release
-    release=$(curl -XPOST -sSLf -H "${AUTH_HEADER}" -H "${API_HEADER}" --data "{\"tag_name\": \"${version}\"}" "${URI}/repos/${owner}/${repo}/releases")
+    release=$(curl -XPOST -sSLf -H "${AUTH_HEADER}" -H "${API_HEADER}" --data "{\"tag_name\": \"${version}\"}" "${URI}/repos/${repo_full_name}/releases")
 
       release_id=$(echo "$release" | jq --raw-output .id)
       echo "ReleaseID: ${release_id}"
 
-      for f in $GITHUB_WORKSPACE/"$@"; do
+      for f in "$@"; do
         file=$(basename "$f")
         type=$(file -b --mime-type "$f")
-        echo "Adding ${f} to release..."
-        echo "${UPLOADS_URI}/repos/${owner}/${repo}/releases/${release_id}/assets?name=${file}"
+        echo "Adding ${f} of type ${type} to release..."
+        echo "${UPLOADS_URI}/repos/${repo_full_name}/releases/${release_id}/assets?name=${file}"
 
         # https://developer.github.com/v3/repos/releases/#upload-a-release-asset
         curl -XPOST -sSL \
           -H "${AUTH_HEADER}" \
           -H "${API_HEADER}" \
           -H "Content-Type: ${type}" \
-          --data-binary "@${GITHUB_WORKSPACE}/${f}" \
-          "${UPLOADS_URI}/repos/${owner}/${repo}/releases/${release_id}/assets?name=${file}" > /dev/null
+          --data-binary @"$f" \
+          "${UPLOADS_URI}/repos/${owner}/${repo}/releases/${release_id}/assets?name=${file}"
       done
 
     echo "Release created successfully!"

@@ -5,7 +5,7 @@ A Github action to create releases and upload artifacts to the release. It assum
 
 ```
 workflow "on tag, create a release and upload artifacts" {
-  on = "tag"
+  on = "create"
   resolves = ["create release"]
 }
 
