@@ -16,7 +16,7 @@ action "create release" {
 }
 ```
 
-Tests
+## Tests
 
 The tests use shellcheck.
 
