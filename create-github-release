@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 set -o pipefail
-# DEBUG=true
+DEBUG=true
 
 if [[ ! -z "$DEBUG" ]]; then
   GITHUB_EVENT_PATH='./testdata/event.json'
@@ -45,23 +45,23 @@ main() {
     # https://developer.github.com/v3/repos/releases/#create-a-release
     release=$(curl -XPOST -sSLf -H "${AUTH_HEADER}" -H "${API_HEADER}" --data "{\"tag_name\": \"${version}\"}" "${URI}/repos/${repo_full_name}/releases")
 
-      release_id=$(echo "$release" | jq --raw-output .id)
-      echo "ReleaseID: ${release_id}"
+    release_id=$(echo "$release" | jq --raw-output .id)
+    echo "ReleaseID: ${release_id}"
 
-      for f in "$@"; do
-        file=$(basename "$f")
-        type=$(file -b --mime-type "$f")
-        echo "Adding ${f} of type ${type} to release..."
-        echo "${UPLOADS_URI}/repos/${repo_full_name}/releases/${release_id}/assets?name=${file}"
+    for f in "$@"; do
+      file=$(basename "$f")
+      type=$(file -b --mime-type "$f")
+      echo "Adding ${f} of type ${type} to release..."
+      echo "${UPLOADS_URI}/repos/${repo_full_name}/releases/${release_id}/assets?name=${file}"
 
-        # https://developer.github.com/v3/repos/releases/#upload-a-release-asset
-        curl -XPOST -sSL \
-          -H "${AUTH_HEADER}" \
-          -H "${API_HEADER}" \
-          -H "Content-Type: ${type}" \
-          --data-binary @"$f" \
-          "${UPLOADS_URI}/repos/${owner}/${repo}/releases/${release_id}/assets?name=${file}"
-      done
+      # https://developer.github.com/v3/repos/releases/#upload-a-release-asset
+      curl -XPOST -sSL \
+        -H "${AUTH_HEADER}" \
+        -H "${API_HEADER}" \
+        -H "Content-Type: ${type}" \
+        --data-binary "@$f" \
+        "${UPLOADS_URI}/repos/${repo_full_name}/releases/${release_id}/assets?name=${file}"
+    done
 
     echo "Release created successfully!"
     exit 0
