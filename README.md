@@ -1,6 +1,6 @@
 # Github Release Action
 
-A Github action to create releases and upload artifacts to the release. It assumes anything in `$GITHUB_WORKSPACE` matching any number of args to the script is an artifact.
+A Github action to create releases and upload artifacts to the release. It assumes anything in `$GITHUB_WORKSPACE` matching any number of args to the script is an artifact. The default argument is `*.tgz`.
 
 
 ```
