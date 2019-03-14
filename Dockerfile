@@ -9,6 +9,7 @@ RUN	apk add --no-cache \
 	bash \
 	ca-certificates \
 	curl \
+	file \
 	jq
 
 COPY create-github-release /usr/bin/create-github-release
