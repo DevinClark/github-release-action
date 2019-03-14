@@ -2,6 +2,7 @@
 set -e
 set -o pipefail
 # DEBUG=true
+ARTIFACTS=$*
 
 if [[ ! -z "$DEBUG" ]]; then
   GITHUB_EVENT_PATH='./testdata/event.json'
@@ -9,6 +10,11 @@ if [[ ! -z "$DEBUG" ]]; then
   GITHUB_REPOSITORY='magistrate/dashboard'
 fi
 
+if [ "$ARTIFACTS" == "" ]; then
+  echo "No arguments provided. Falling back to *.tgz"
+  ARTIFACTS="*.tgz"
+
+fi
 
 if [[ ! -z "$TOKEN" ]]; then
   GITHUB_TOKEN=$TOKEN
@@ -48,7 +54,7 @@ main() {
     release_id=$(echo "$release" | jq --raw-output .id)
     echo "ReleaseID: ${release_id}"
 
-    for f in "$@"; do
+    for f in $ARTIFACTS; do
       file=$(basename "$f")
       type=$(file -b --mime-type "$f")
       echo "Adding ${f} of type ${type} to release..."
